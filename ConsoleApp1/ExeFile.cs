@@ -17,13 +17,24 @@ namespace ConsoleApp1
 
         public ExeFile()    //Для запуска 1С с параметрами по умолчанию
         {
-            ExePath = @"C:\Program Files\1cv8\8.3.15.1830\bin\1cv8.exe";
+            /*ExePath = @"C:\Program Files\1cv8\8.3.15.1830\bin\1cv8.exe";
             DataBaseName = @"C:\1CBases83";
             DataBase = @"/F%DataBaseName%";
             User = "/N\"Обмен\"  /P\"229120\" /WA-";
             AdminUser = "/N\"Продавец Зеленый\"  /P\"123\" /WA-";
-            Params = "ENTERPRISE " + DataBaseName + " " + User + " " + @"/DisableStartupMessages";
+            Params = "ENTERPRISE " + DataBaseName + " " + User + " " + @"/DisableStartupMessages";*/
+
+            ExePath = "explorer.exe";
+            Params = @"D:\git\";
         }
+
+        public ExeFile(string path, string arg)
+        {
+            ExePath = path;
+            Params = arg;
+
+        }
+
 
         public ExeFile(string _v8exe, string _DataBaseName, string _DataBase, string _User, string _AdminUser)
         {
