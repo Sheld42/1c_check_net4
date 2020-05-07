@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
 using System.Drawing;
@@ -23,7 +17,7 @@ namespace ConsoleApp1
 
         static void Main(string[] args)
         {
-            string[] param = new string[7];
+            string[] param = new string[10];
 
             NotifyIcon trayIcon = new NotifyIcon();
             trayIcon.Text = "1c starter";
@@ -32,60 +26,35 @@ namespace ConsoleApp1
 
 
 
-            //собирается путь исполняемого файла с параметрами, 1 строка путь, + ост как параметры.
-            //формат файла:
-            //# Путь к ехе 1С
-            //# Путь к базе данных
-            //# База данных
-            //# Пользователь
-            //# Админ пользователь
-            //#TimeOut между проверками на закрытие 1С.
-            if (System.IO.File.Exists("options"))
+            param = ReadParams();
+            string FlagFile = "";
+            if (param[0].Length > 1)
             {
-                try
-                {
-                    StreamReader OptFile = new StreamReader("options", Encoding.Default, true);
-
-                    for (int i = 1; i <= 6; i++)
-                        param[i] = OptFile.ReadLine();
-
-                    TimeWait = int.Parse(param[6]);
-                    param[0] = ("ENTERPRISE " + param[2] + " " + param[4] + @" /DisableStartupMessages");
-                    LogLine("Params seted to: #" + param[0] + "#");
-                    LogLine("ExePath seted to #" + param[1] + "#");
-                }
-                catch
-                {
-                    LogLine("Failed to read params from file");
-                    LogLine("Using default params instead");
-                    param[0] = "";
-                }
+                file1 = new ExeFile(param[1], param[0]);
+                FlagFile = param[7];
+                int.TryParse(param[6], out TimeWait);
             }
             else
-                param[0] = "";
+                file1 = new ExeFile();
 
-            file1 = param[0].Length > 1 ? new ExeFile(param[1], param[0]) : new ExeFile();
-
-
+            //###########################
+            //      Основной цикл
+            //###########################
 
             int PID;
             while (true)
             {
                 try
                 {
-                    PID = file1.StartExe();
-                    //Console.WriteLine("Process started with PID = " + PID.ToString());
+                    PID = file1.StartExe();                                 
                     LogLine("Process started with PID = " + PID.ToString());
-                    Thread.Sleep(TimeWait);
+                    //Thread.Sleep(TimeWait);
                     file1.WaitForExit();
+                    while (CheckForBusy(FlagFile)) ;
                     Thread.Sleep(TimeWait);
                 }
-                catch { LogLine("You fucked it up"); }
+                catch { LogLine("You fucked it up"); Thread.Sleep(TimeWait); }
             }
-
-
-            //LogLine("Конец кода программы.");
-
         }
 
         static public void LogLine(string LogLine)      //лог в файл рядом с ехе. Usage: LogLine(sting);
@@ -96,34 +65,60 @@ namespace ConsoleApp1
             LogFile.Close();
         }
 
-
-        static private string StartUpMenu()
+        static private bool CheckForBusy(string filename)
         {
-            string param = "";
-            string menu;
-            while (true)
+            if (System.IO.File.Exists(filename))
             {
-
-                Console.WriteLine("1 - Использовать параметры по умолчанию");
-                Console.WriteLine("2 - Указать параметры запуска");
-                Console.WriteLine("");
-                Console.WriteLine("");
-                Console.WriteLine("0 - Выход");
-                menu = Console.ReadLine();
-                if (menu == "0") break;
-                else if (menu == "1") break;
-                else if (menu == "2")
-                {
-                    param = Console.ReadLine();
-                    //file1 = new ExeFile(param);
-                    return param;
-
-                }
-
+                LogLine("Exchange detected, halting");
+                Thread.Sleep(TimeWait);
+                return true;
             }
-            return param;
+            else
+                return false;
         }
 
+        //Описание параметров и ихпозиция в файле options
+        //собирается путь исполняемого файла с параметрами, 1 строка путь, + ост как параметры.
+        //формат файла:
+        //#0 Системная
+        //#1 Путь к ехе 1С           C:\Program Files\1cv8\8.3.15.1830\bin\1cv8.exe
+        //#2 Путь к базе данных      /F"C:\1CBases83"
+        //#3 База данных             C:\1CBases83                  /F%DataBaseName%
+        //#4 Пользователь            /N"Обмен"  /P"229120" /WA-
+        //#5 Админ пользователь      /N"Продавец Зеленый"  /P"123" /WA-
+        //#6 TimeOut между проверками на закрытие 1С в мс
+        //#7 Путь к файлу-семафору для активного обмена
+
+        static private string[] ReadParams()
+        {
+            string[] Param = new string[10];
+
+            if (System.IO.File.Exists("options"))
+            {
+                try
+                {
+                    StreamReader OptFile = new StreamReader("options", Encoding.Default, true);
+
+                    for (int i = 1; i <= 6; i++)
+                        Param[i] = OptFile.ReadLine();
+
+
+                    Param[0] = ("ENTERPRISE " + Param[2] + " " + Param[4] + @" /DisableStartupMessages");
+                    LogLine("Params seted to: #" + Param[0] + "#");
+                    LogLine("ExePath seted to #" + Param[1] + "#");
+                }
+                catch
+                {
+                    LogLine("Failed to read params from file");
+                    LogLine("Using null params instead");
+                    Param[0] = "";
+                }
+            }
+            else
+                Param[0] = "";
+
+            return Param;
+        }
 
     }
 
