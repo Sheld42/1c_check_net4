@@ -7,8 +7,6 @@ using System.Windows.Forms;
 
 namespace ConsoleApp1
 {
-
-
     class Program
     {
 
@@ -19,45 +17,49 @@ namespace ConsoleApp1
         {
             string[] param = new string[10];
 
-            NotifyIcon trayIcon = new NotifyIcon();
-            trayIcon.Text = "1c starter";
-            trayIcon.Icon = new Icon(SystemIcons.Information, 40, 40);
-            trayIcon.Visible = true;
-
-
+            //NotifyIcon trayIcon = new NotifyIcon();
+            //trayIcon.Text = "1c starter";
+            //trayIcon.Icon = new Icon(SystemIcons.Information, 40, 40);
+            //trayIcon.Visible = true;
 
             param = ReadParams();
-            string FlagFile = "";
+            string FlagFile = "flagfile.txt";
             if (param[0].Length > 1)
             {
                 file1 = new ExeFile(param[1], param[0]);
-                FlagFile = param[7];
+                FlagFile =  param[3] + "\\" + param[7];
                 int.TryParse(param[6], out TimeWait);
             }
             else
-                file1 = new ExeFile();
+            {
 
+                LogLine("Options not found, terminating");
+                return;
+            }
             //###########################
             //      Основной цикл
             //###########################
-
             int PID;
             while (true)
             {
                 try
                 {
-                    PID = file1.StartExe();                                 
+                    PID = file1.StartExe();
                     LogLine("Process started with PID = " + PID.ToString());
-                    //Thread.Sleep(TimeWait);
                     file1.WaitForExit();
+                    LogLine("Working in loop until find next file: " + FlagFile);
                     while (CheckForBusy(FlagFile)) ;
                     Thread.Sleep(TimeWait);
                 }
-                catch { LogLine("You fucked it up"); Thread.Sleep(TimeWait); }
+                catch
+                {
+                    LogLine("Somtething went wrong, sorry");
+                    Thread.Sleep(TimeWait);
+                }
             }
         }
 
-        static public void LogLine(string LogLine)      //лог в файл рядом с ехе. Usage: LogLine(sting);
+        static public void LogLine(string LogLine)
         {
             StreamWriter LogFile = new StreamWriter("log.txt", true);
             LogFile.Write(DateTime.Now.ToString() + "   ");
@@ -82,10 +84,10 @@ namespace ConsoleApp1
         //формат файла:
         //#0 Системная
         //#1 Путь к ехе 1С           C:\Program Files\1cv8\8.3.15.1830\bin\1cv8.exe
-        //#2 Путь к базе данных      /F"C:\1CBases83"
-        //#3 База данных             C:\1CBases83                  /F%DataBaseName%
+        //#2 Currently not using
+        //#3 Путь к базе данных      C:\1CBases83                  /F%DataBaseName%
         //#4 Пользователь            /N"Обмен"  /P"229120" /WA-
-        //#5 Админ пользователь      /N"Продавец Зеленый"  /P"123" /WA-
+        //#5 Currently not using
         //#6 TimeOut между проверками на закрытие 1С в мс
         //#7 Путь к файлу-семафору для активного обмена
 
@@ -99,18 +101,15 @@ namespace ConsoleApp1
                 {
                     StreamReader OptFile = new StreamReader("options", Encoding.Default, true);
 
-                    for (int i = 1; i <= 6; i++)
+                    for (int i = 1; i <= 7; i++)
                         Param[i] = OptFile.ReadLine();
-
-
-                    Param[0] = ("ENTERPRISE " + Param[2] + " " + Param[4] + @" /DisableStartupMessages");
+                    Param[0] = ("ENTERPRISE " + "/F\"" + Param[3] + "\"" + " " + Param[4] + @" /DisableStartupMessages");
                     LogLine("Params seted to: #" + Param[0] + "#");
                     LogLine("ExePath seted to #" + Param[1] + "#");
                 }
                 catch
                 {
                     LogLine("Failed to read params from file");
-                    LogLine("Using null params instead");
                     Param[0] = "";
                 }
             }
